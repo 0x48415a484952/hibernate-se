@@ -1,0 +1,27 @@
+/* styles.css */
+
+.styled-button {
+    -fx-background-color: #4CAF50; /* Green background color */
+    -fx-text-fill: white; /* White text color */
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 10px 20px;
+    -fx-border-radius: 5px;
+}
+
+.styled-button:hover {
+    -fx-background-color: #00ff7f; /* Darker green background color on hover */
+}
+
+.styled-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333;
+}
+
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('/webfonts/fa-regular-400.ttf');
+}
+
+

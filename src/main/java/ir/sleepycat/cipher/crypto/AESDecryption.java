@@ -2,32 +2,32 @@ package ir.sleepycat.cipher.crypto;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.SecretKey;
 import java.io.FileInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Scanner;
 
-public class AESDecryption {
-    private static final String ALGORITHM = "AES";
-    private static final String CIPHER_TRANSFORMATION = "AES/GCM/NoPadding";
-    private static final int TAG_LENGTH_BIT = 128;
-    private static final int IV_LENGTH_BYTE = 12;
+
+public class AESDecryption extends KeyDerivation {
 
     // Decrypt using AES with GCM mode
     public static String decrypt(String encryptedData, String password) throws Exception {
         byte[] combinedData = Base64.getDecoder().decode(encryptedData);
 
+        byte[] salt = new byte[IV_LENGTH_BYTE];
         byte[] iv = new byte[IV_LENGTH_BYTE];
-        System.arraycopy(combinedData, 0, iv, 0, iv.length);
+        byte[] encryptedBytes = new byte[combinedData.length - (2 * IV_LENGTH_BYTE)];
+        System.arraycopy(combinedData, 0, salt, 0, salt.length);
+        System.arraycopy(combinedData, salt.length, iv, 0, iv.length);
+        System.arraycopy(combinedData, salt.length + iv.length, encryptedBytes, 0, encryptedBytes.length);
+
+        SecretKey secretKey = deriveKey(password, salt);
+
         GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(TAG_LENGTH_BIT, iv);
 
-        SecretKeySpec secretKey = new SecretKeySpec(password.getBytes(StandardCharsets.UTF_8), ALGORITHM);
         Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
         cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmParameterSpec);
-
-        byte[] encryptedBytes = new byte[combinedData.length - IV_LENGTH_BYTE];
-        System.arraycopy(combinedData, IV_LENGTH_BYTE, encryptedBytes, 0, encryptedBytes.length);
 
         byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
         return new String(decryptedBytes, StandardCharsets.UTF_8);

@@ -4,6 +4,9 @@ import ir.sleepycat.cipher.crypto.AESDecryption;
 import ir.sleepycat.cipher.crypto.AESEncryption;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -17,6 +20,7 @@ import java.util.Objects;
 
 
 public class GuiApplication extends Application {
+    private static final String PASSWORD_FIELD_ID ="passwordField";
     private final TextArea messageTextArea = new TextArea();
     private final TextArea encryptedMessageTextArea = new TextArea();
     private final Button encryptButton = createStyledButton("Encrypt");
@@ -47,8 +51,8 @@ public class GuiApplication extends Application {
         gridPane.add(createStyledLabel("Enter the password:"), 0, 2);
 
         // Use a custom PasswordField with a ToggleButton for the eye button
-        PasswordField passwordField = createPasswordFieldWithEyeButton();
-        gridPane.add(passwordField, 0, 3);
+        GridPane passwordLayout = createPasswordFieldWithEyeButton();
+        gridPane.add(passwordLayout, 0, 3);
 
         gridPane.add(createStyledLabel("Enter the encrypted message:"), 0, 4);
         gridPane.add(encryptedMessageTextArea, 0, 5);
@@ -72,6 +76,10 @@ public class GuiApplication extends Application {
         primaryStage.show();
 
         encryptButton.setOnAction(e -> {
+            CustomPasswordField passwordField = (CustomPasswordField) passwordLayout.getChildren().stream().filter(x-> {
+                return x.getId().equals(PASSWORD_FIELD_ID);
+            }).findFirst().orElse(null);
+            assert passwordField != null;
             String password = passwordField.getText();
             String originalText = messageTextArea.getText();
 
@@ -79,11 +87,14 @@ public class GuiApplication extends Application {
                 String encryptedText = AESEncryption.encrypt(originalText, password);
                 resultTextArea.setText("Encrypted: " + encryptedText);
             } catch (Exception ex) {
-                resultTextArea.setText("Error: " + ex.getMessage());
+                resultTextArea.setText("Error: Failed to encrypt the message.");
             }
         });
 
         decryptButton.setOnAction(e -> {
+            CustomPasswordField passwordField = (CustomPasswordField) passwordLayout.getChildren().stream()
+                    .filter(x->x.getId().equals(PASSWORD_FIELD_ID)).findFirst().orElse(null);
+            assert passwordField != null;
             String password = passwordField.getText();
             String encryptedText = encryptedMessageTextArea.getText();
 
@@ -91,7 +102,7 @@ public class GuiApplication extends Application {
                 String decryptedText = AESDecryption.decrypt(encryptedText, password);
                 resultTextArea.setText("Decrypted: " + decryptedText);
             } catch (Exception ex) {
-                resultTextArea.setText("Error: " + ex.getMessage());
+                resultTextArea.setText("Error: Failed to decrypt the message.");
             }
         });
     }
@@ -105,13 +116,15 @@ public class GuiApplication extends Application {
     private Label createStyledLabel(String text) {
         Label label = new Label(text);
         label.getStyleClass().add("styled-label");
+        label.setWrapText(true); // Allow label text to wrap if it's too long
         return label;
     }
 
 
-    private PasswordField createPasswordFieldWithEyeButton() {
-        PasswordField passwordField = new PasswordField();
+    private GridPane createPasswordFieldWithEyeButton() {
+        CustomPasswordField passwordField = new CustomPasswordField();
         passwordField.setPromptText("Enter password");
+        passwordField.setId(PASSWORD_FIELD_ID);
 
         Region rightPadding = new Region();
         rightPadding.setMinWidth(15); // Add some padding between password field and eye icon
@@ -124,17 +137,13 @@ public class GuiApplication extends Application {
         eyeIcon.setTooltip(tooltip);
 
         StackPane eyeIconPane = new StackPane(eyeIcon);
-        eyeIconPane.setMinSize(Control.USE_PREF_SIZE, Control.USE_PREF_SIZE); // Set fixed size for the StackPane
+        eyeIconPane.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE); // Set fixed size for the StackPane
 
         eyeIconPane.setOnMousePressed(e -> {
-            if (passwordField.getFont().equals(Font.getDefault())) {
-                passwordField.setFont(Font.font(0)); // Set font size to 0 to hide the asterisks
-                tooltip.setText("Hide Password");
-            } else {
-                passwordField.setFont(Font.getDefault()); // Reset font size to default to show the password
-                tooltip.setText("Show Password");
-            }
+            passwordField.togglePasswordMode();
+            tooltip.setText(passwordField.passwordMode ? "Show Password" : "Hide Password");
         });
+
 
         GridPane gridPane = new GridPane();
         gridPane.setHgap(5);
@@ -145,11 +154,87 @@ public class GuiApplication extends Application {
         // Apply some styling to the password field container
 //        gridPane.getStyleClass().add("password-field-container");
 
-        return passwordField;
+        return gridPane;
     }
 
 
     public static void main(String[] args) {
         launch(args);
     }
+
+    public class CustomPasswordField extends TextField {
+        private boolean passwordMode = false;
+        private String actualText = "";
+        private String maskText = "";
+
+        public CustomPasswordField() {
+            setPromptText("Enter password");
+
+            // Add a listener to the textProperty()
+            textProperty().addListener(new ChangeListener<String>() {
+                @Override
+                public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                    // Only update caret position when passwordMode is true (masked password)
+                    if (passwordMode) {
+                        Platform.runLater(() -> positionCaret(getText().length()));
+                    }
+                }
+            });
+        }
+
+        public void togglePasswordMode() {
+            passwordMode = !passwordMode;
+            if (passwordMode) {
+                maskText = generatePasswordMask(actualText);
+                setText(maskText);
+            } else {
+                setText(actualText);
+            }
+            Platform.runLater(() -> positionCaret(getText().length()));
+        }
+
+        private String generatePasswordMask(String originalText) {
+            return "*".repeat(originalText.length());
+        }
+
+        @Override
+        public void replaceText(int start, int end, String text) {
+            if (passwordMode) {
+                String newText = maskText.substring(0, start) + text + maskText.substring(Math.min(end, maskText.length()));
+                int actualStart = Math.min(start, actualText.length());
+                int actualEnd = Math.min(end, actualText.length());
+                actualText = actualText.substring(0, actualStart) + text + actualText.substring(actualEnd);
+                maskText = generatePasswordMask(newText);
+                setText(maskText);
+            } else {
+                int actualEnd = Math.min(end, actualText.length());
+                actualText = actualText.substring(0, start) + text + actualText.substring(actualEnd);
+                super.replaceText(start, actualEnd, text);
+            }
+        }
+
+        @Override
+        public void replaceSelection(String text) {
+            if (passwordMode) {
+                int start = getSelection().getStart();
+                int end = getSelection().getEnd();
+                int actualStart = Math.min(start, maskText.length());
+                int actualEnd = Math.min(end, maskText.length());
+                String newText = maskText.substring(0, actualStart) + text + maskText.substring(actualEnd);
+                maskText = generatePasswordMask(newText);
+                setText(maskText);
+                selectRange(start, start + text.length());
+            } else {
+                int start = getSelection().getStart();
+                int end = getSelection().getEnd();
+                int actualStart = Math.min(start, actualText.length());
+                int actualEnd = Math.min(end, actualText.length());
+                actualText = actualText.substring(0, actualStart) + text + actualText.substring(actualEnd);
+                super.replaceSelection(text);
+            }
+        }
+    }
+
+
+
 }

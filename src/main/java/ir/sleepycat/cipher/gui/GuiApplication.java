@@ -5,16 +5,17 @@ import ir.sleepycat.cipher.crypto.AESEncryption;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.*;
 import java.util.Objects;
 
 
@@ -27,6 +28,10 @@ public class GuiApplication extends Application {
     private final Button decryptButton = createStyledButton("Decrypt");
     private final Label resultLabel = createStyledLabel("Result:");
     private final TextArea resultTextArea = new TextArea();
+
+    private GridPane passwordLayout;
+
+    private String encryptedText; // Variable to store the encrypted text without the "Encrypted: " label
 
     @Override
     public void start(Stage primaryStage) {
@@ -51,7 +56,7 @@ public class GuiApplication extends Application {
         gridPane.add(createStyledLabel("Enter the password:"), 0, 2);
 
         // Use a custom PasswordField with a ToggleButton for the eye button
-        GridPane passwordLayout = createPasswordFieldWithEyeButton();
+        passwordLayout = createPasswordFieldWithEyeButton();
         gridPane.add(passwordLayout, 0, 3);
 
         gridPane.add(createStyledLabel("Enter the encrypted message:"), 0, 4);
@@ -64,10 +69,16 @@ public class GuiApplication extends Application {
         VBox resultBox = new VBox(10, resultLabel, resultTextArea);
         resultBox.setAlignment(Pos.CENTER);
 
-        VBox root = new VBox(20, gridPane, buttonsBox, resultBox);
-        root.setPadding(new Insets(20));
-        root.setFillWidth(true);
-        root.setAlignment(Pos.CENTER);
+        // Create a new button to save encrypted text to a file
+        Button saveToFileButton = createStyledButton("Save Encrypted Text to File");
+        saveToFileButton.setOnAction(e -> saveEncryptedTextToFile());
+
+        // Add the new button to the layout
+        buttonsBox.getChildren().add(saveToFileButton);
+
+
+        VBox root = new VBox(20, gridPane, buttonsBox, resultBox, saveToFileButton);
+
 
         Scene scene = new Scene(root, 500, 500);
         scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/styles.css")).toExternalForm());
@@ -84,7 +95,7 @@ public class GuiApplication extends Application {
             String originalText = messageTextArea.getText();
 
             try {
-                String encryptedText = AESEncryption.encrypt(originalText, password);
+                encryptedText = AESEncryption.encrypt(originalText, password);
                 resultTextArea.setText("Encrypted: " + encryptedText);
             } catch (Exception ex) {
                 resultTextArea.setText("Error: Failed to encrypt the message.");
@@ -96,7 +107,7 @@ public class GuiApplication extends Application {
                     .filter(x->x.getId().equals(PASSWORD_FIELD_ID)).findFirst().orElse(null);
             assert passwordField != null;
             String password = passwordField.getText();
-            String encryptedText = encryptedMessageTextArea.getText();
+            encryptedText = encryptedMessageTextArea.getText();
 
             try {
                 String decryptedText = AESDecryption.decrypt(encryptedText, password);
@@ -105,6 +116,31 @@ public class GuiApplication extends Application {
                 resultTextArea.setText("Error: Failed to decrypt the message.");
             }
         });
+
+
+
+
+        // Use VBox to stack the elements vertically
+        root.setPadding(new Insets(20));
+        root.setFillWidth(true);
+        root.setAlignment(Pos.CENTER);
+    }
+
+    // Method to save encrypted text to a file
+    private void saveEncryptedTextToFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
+        File file = fileChooser.showSaveDialog(null);
+
+        if (file != null) {
+            try (PrintWriter writer = new PrintWriter(file)) {
+                // Save the encrypted text to the file
+                writer.write(encryptedText);
+                writer.flush();
+            } catch (IOException ex) {
+                System.err.println("Error: Failed to save the file.");
+            }
+        }
     }
 
     private Button createStyledButton(String text) {
@@ -145,16 +181,20 @@ public class GuiApplication extends Application {
         });
 
 
-        GridPane gridPane = new GridPane();
-        gridPane.setHgap(5);
-        gridPane.add(passwordField, 0, 0);
-        gridPane.add(rightPadding, 1, 0);
-        gridPane.add(eyeIconPane, 2, 0);
+        passwordLayout = new GridPane();
+        passwordLayout.setHgap(5);
+        passwordLayout.add(passwordField, 0, 0);
+        passwordLayout.add(rightPadding, 1, 0);
+        passwordLayout.add(eyeIconPane, 2, 0);
+
+        // Set the password field to grow horizontally with the window
+        GridPane.setHgrow(passwordField, Priority.ALWAYS);
+        GridPane.setHalignment(passwordField, HPos.CENTER);
 
         // Apply some styling to the password field container
 //        gridPane.getStyleClass().add("password-field-container");
 
-        return gridPane;
+        return passwordLayout;
     }
 
 
@@ -162,7 +202,7 @@ public class GuiApplication extends Application {
         launch(args);
     }
 
-    public class CustomPasswordField extends TextField {
+    private static class CustomPasswordField extends TextField {
         private boolean passwordMode = false;
         private String actualText = "";
         private String maskText = "";
@@ -171,13 +211,10 @@ public class GuiApplication extends Application {
             setPromptText("Enter password");
 
             // Add a listener to the textProperty()
-            textProperty().addListener(new ChangeListener<String>() {
-                @Override
-                public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                    // Only update caret position when passwordMode is true (masked password)
-                    if (passwordMode) {
-                        Platform.runLater(() -> positionCaret(getText().length()));
-                    }
+            textProperty().addListener((observable, oldValue, newValue) -> {
+                // Only update caret position when passwordMode is true (masked password)
+                if (passwordMode) {
+                    Platform.runLater(() -> positionCaret(getText().length()));
                 }
             });
         }
@@ -235,6 +272,44 @@ public class GuiApplication extends Application {
         }
     }
 
+
+    private void addEncryptedTextFromFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Add Encrypted Text from File");
+
+        // Set the initial directory (optional)
+        File initialDirectory = new File(System.getProperty("user.home"));
+        fileChooser.setInitialDirectory(initialDirectory);
+
+        // Set the file extension filter (optional)
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Text files (*.txt)", "*.txt");
+        fileChooser.getExtensionFilters().add(extFilter);
+
+        // Show the file open dialog
+        File file = fileChooser.showOpenDialog(null);
+        if (file != null) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                StringBuilder encryptedText = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    encryptedText.append(line).append("\n");
+                }
+
+                CustomPasswordField passwordField = (CustomPasswordField) passwordLayout.getChildren()
+                        .stream().filter(x -> x.getId().equals(PASSWORD_FIELD_ID)).findFirst().orElse(null);
+
+                assert passwordField != null;
+                String password = passwordField.getText();
+
+                String decryptedText = AESDecryption.decrypt(encryptedText.toString(), password);
+                resultTextArea.setText("Decrypted: " + decryptedText);
+            } catch (IOException e) {
+                System.err.println("Error reading encrypted text from file: " + e.getMessage());
+            } catch (Exception ex) {
+                resultTextArea.setText("Error: Failed to decrypt the message.");
+            }
+        }
+    }
 
 
 }

@@ -191,14 +191,11 @@ public class GuiApplication extends Application {
         GridPane.setHgrow(passwordField, Priority.ALWAYS);
         GridPane.setHalignment(passwordField, HPos.CENTER);
 
-        // Apply some styling to the password field container
-//        gridPane.getStyleClass().add("password-field-container");
-
         return passwordLayout;
     }
 
 
-    public static void main(String[] args) {
+    public static void runGui(String[] args) {
         launch(args);
     }
 

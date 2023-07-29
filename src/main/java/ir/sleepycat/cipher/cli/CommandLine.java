@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class CommandLine {
     private static final Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
+    public static void runCli(String[] args) {
         System.out.println("Choose an option:");
         System.out.println("1. Encrypt");
         System.out.println("2. Decrypt");

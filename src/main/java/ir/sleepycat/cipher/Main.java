@@ -1,11 +1,8 @@
 package ir.sleepycat.cipher;
 
 
+import ir.sleepycat.cipher.cli.CommandLine;
 import ir.sleepycat.cipher.gui.GuiApplication;
-import ir.sleepycat.cipher.util.HibernateUtil;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 
 public class Main {
     public static void main(String[] args) {
@@ -20,6 +17,13 @@ public class Main {
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
-        GuiApplication.main(args);
+
+        if (args.length > 0 && args[0].equals("--gui")) {
+            // Launch JavaFX GUI
+            GuiApplication.runGui(args);
+        } else {
+            CommandLine.runCli(args);
+            // Start command-line interface
+        }
     }
 }

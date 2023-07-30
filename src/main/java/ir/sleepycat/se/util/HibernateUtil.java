@@ -1,4 +1,4 @@
-package ir.sleepycat.cipher.util;
+package ir.sleepycat.se.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;

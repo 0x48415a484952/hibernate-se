@@ -78,7 +78,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.1</version>
                 <configuration>
-                    <mainClass>ir.sleepycat.cipher.gui.GuiApplication</mainClass>
+                    <mainClass>ir.sleepycat.se.gui.GuiApplication</mainClass>
                 </configuration>
             </plugin>
 
@@ -91,7 +91,7 @@
                     <!-- Specify the main class here -->
                     <archive>
                         <manifest>
-                            <mainClass>ir.sleepycat.cipher.Main</mainClass>
+                            <mainClass>ir.sleepycat.se.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -111,7 +111,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>ir.sleepycat.cipher.Main</mainClass>
+                                    <mainClass>ir.sleepycat.se.Main</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

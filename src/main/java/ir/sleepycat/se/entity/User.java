@@ -1,4 +1,4 @@
-package ir.sleepycat.cipher.entity;
+package ir.sleepycat.se.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

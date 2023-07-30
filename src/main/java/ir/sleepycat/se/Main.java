@@ -1,8 +1,8 @@
-package ir.sleepycat.cipher;
+package ir.sleepycat.se;
 
 
-import ir.sleepycat.cipher.cli.CommandLine;
-import ir.sleepycat.cipher.gui.GuiApplication;
+import ir.sleepycat.se.cli.CommandLine;
+import ir.sleepycat.se.gui.GuiApplication;
 
 public class Main {
     public static void main(String[] args) {

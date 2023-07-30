@@ -14,6 +14,6 @@
 
         <!-- Mapping files -->
         <!-- Add your entity class mappings here -->
-        <mapping class="ir.sleepycat.cipher.entity.User" />
+        <mapping class="ir.sleepycat.se.entity.User" />
     </session-factory>
 </hibernate-configuration>

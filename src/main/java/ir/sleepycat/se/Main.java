@@ -1,29 +1,23 @@
 package ir.sleepycat.se;
 
 
-import ir.sleepycat.se.cli.CommandLine;
-import ir.sleepycat.se.gui.GuiApplication;
+import ir.sleepycat.se.util.HibernateUtil;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 
 public class Main {
     public static void main(String[] args) {
-//        SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
-//        try (Session session = sessionFactory.openSession()) {
-//            Transaction tx = session.beginTransaction();
-//
-//            // Perform CRUD operations using Hibernate
-//            // Example: session.save(yourEntity);
-//
-//            tx.commit();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
 
-        if (args.length > 0 && args[0].equals("--gui")) {
-            // Launch JavaFX GUI
-            GuiApplication.runGui(args);
-        } else {
-            CommandLine.runCli(args);
-            // Start command-line interface
+            // Perform CRUD operations using Hibernate
+            // Example: session.save(yourEntity);
+
+            tx.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
